@@ -1,0 +1,49 @@
+{
+  "name": "chatgpt-exporter",
+  "version": "1.0.0",
+  "description": "CLI tool to export ChatGPT conversations",
+  "license": "MIT",
+  "author": "Rodrigo Fernández",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "chatgpt-exporter": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FdezRomero/chatgpt-export.git"
+  },
+  "keywords": [
+    "chatgpt",
+    "backup",
+    "export",
+    "cli",
+    "markdown"
+  ],
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "cli-progress": "^3.12.0",
+    "commander": "^14.0.3",
+    "ora": "^9.3.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.5",
+    "@types/node": "^25.3.0",
+    "tsup": "^8.1.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.4.5"
+  }
+}

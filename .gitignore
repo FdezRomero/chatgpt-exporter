@@ -1,0 +1,7 @@
+node_modules/
+dist/
+chatgpt-export/
+*.log
+.env
+.DS_Store
+.claude
