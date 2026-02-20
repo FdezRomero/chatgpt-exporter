@@ -5,7 +5,7 @@ import {
   RateLimitError,
   NetworkError,
 } from './types.js';
-import { withRetry } from '../utils/retry.js';
+import { withRetry, type RetryOptions } from '../utils/retry.js';
 
 export interface ClientOptions {
   verbose?: boolean;
@@ -76,13 +76,14 @@ export class ChatGPTClient {
       method?: string;
       body?: unknown;
       parseResponse?: (data: unknown) => T;
+      retryOptions?: Partial<RetryOptions>;
     } = {}
   ): Promise<T> {
     if (!this.accessToken) {
       throw new AuthenticationError('Client not initialized. Call initialize() first.');
     }
 
-    const { method = 'GET', body, parseResponse } = options;
+    const { method = 'GET', body, parseResponse, retryOptions } = options;
 
     return withRetry(
       async () => {
@@ -115,6 +116,50 @@ export class ChatGPTClient {
         return parseResponse ? parseResponse(data) : (data as T);
       },
       {
+        ...retryOptions,
+        onRetry: (error, attempt, delay) => {
+          if (this.verbose) {
+            console.log(`Retry ${attempt}: ${error.message} (waiting ${Math.round(delay / 1000)}s)`);
+          }
+        },
+      }
+    );
+  }
+
+  async fetchRaw(url: string, retryOptions?: Partial<RetryOptions>): Promise<ArrayBuffer> {
+    const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
+    const fullUrl = isAbsolute ? url : `${BASE_URL}${url}`;
+    // Send auth headers if the URL is on chatgpt.com (e.g. /backend-api/estuary/content)
+    const isSameOrigin = !isAbsolute || fullUrl.startsWith(BASE_URL);
+    const headers = isSameOrigin ? this.getHeaders() : {};
+
+    return withRetry(
+      async () => {
+        const response = await fetch(fullUrl, { headers });
+
+        if (!response.ok) {
+          if (isSameOrigin && (response.status === 401 || response.status === 403)) {
+            throw new AuthenticationError('Access token expired or invalid.');
+          }
+
+          if (response.status === 429) {
+            const retryAfter = response.headers.get('retry-after');
+            throw new RateLimitError(
+              'Rate limited by API',
+              retryAfter ? parseInt(retryAfter, 10) * 1000 : undefined
+            );
+          }
+
+          throw new NetworkError(
+            `Request failed: ${response.status} ${response.statusText}`,
+            response.status
+          );
+        }
+
+        return response.arrayBuffer();
+      },
+      {
+        ...retryOptions,
         onRetry: (error, attempt, delay) => {
           if (this.verbose) {
             console.log(`Retry ${attempt}: ${error.message} (waiting ${Math.round(delay / 1000)}s)`);

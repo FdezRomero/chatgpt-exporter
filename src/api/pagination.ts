@@ -22,7 +22,7 @@ export async function* fetchAllConversations(
   client: ChatGPTClient,
   options: PaginationOptions = {}
 ): AsyncGenerator<ConversationItem, void, unknown> {
-  const { limit = 28, delay = 500, onProgress } = options;
+  const { limit = 100, delay = 500, onProgress } = options;
   let offset = 0;
   let total = Infinity;
   let fetched = 0;

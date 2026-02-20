@@ -9,7 +9,7 @@ export function createCli(): Command {
   program
     .name('chatgpt-exporter')
     .description('Export your ChatGPT conversations')
-    .version('1.0.0')
+    .version('1.1.0')
     .action(() => {
       program.help();
     });
@@ -38,6 +38,7 @@ export function createCli(): Command {
     .option('--concurrency <n>', 'Parallel downloads', (v) => parseInt(v, 10), 3)
     .option('--delay <ms>', 'Delay between requests in ms', (v) => parseInt(v, 10), 500)
     .option('--incremental', 'Only download new/updated conversations', false)
+    .option('--download-files', 'Download file attachments and images', false)
     .option('--project <name-or-id>', 'Only backup conversations from a specific project')
     .option('-v, --verbose', 'Verbose logging', false)
     .action(async (options) => {
@@ -48,6 +49,7 @@ export function createCli(): Command {
         concurrency: options.concurrency,
         delay: options.delay,
         incremental: options.incremental,
+        downloadFiles: options.downloadFiles,
         verbose: options.verbose,
         project: options.project,
       });

@@ -120,6 +120,12 @@ export const ProjectConversationsResponseSchema = z.looseObject({
 
 export type ProjectConversationsResponse = z.infer<typeof ProjectConversationsResponseSchema>;
 
+export interface FileReference {
+  fileId: string;
+  filename?: string;
+  source: 'image_asset_pointer' | 'attachment' | 'citation';
+}
+
 export class AuthenticationError extends Error {
   constructor(message: string) {
     super(message);

@@ -8,6 +8,7 @@ export interface BackupMetadata {
   successfulDownloads: number;
   failedDownloads: number;
   errors: Array<{ conversationId: string; error: string }>;
+  failedFiles?: string[];
 }
 
 export class StorageService {

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ConversationDetail } from '../api/types.js';
+import { buildFileMap } from './file-service.js';
 
 interface MappingNode {
   id: string;
@@ -19,7 +20,7 @@ interface MappingNode {
   children?: string[];
 }
 
-export function extractTextFromParts(parts: unknown[]): string {
+export function extractTextFromParts(parts: unknown[], fileMap?: Map<string, string>): string {
   const pieces: string[] = [];
   for (const part of parts) {
     if (typeof part === 'string') {
@@ -28,6 +29,13 @@ export function extractTextFromParts(parts: unknown[]): string {
       const obj = part as Record<string, unknown>;
       if (obj.content_type === 'image_asset_pointer') {
         const pointer = obj.asset_pointer as string | undefined;
+        if (pointer && fileMap) {
+          const fileId = pointer.startsWith('file-service://') ? pointer.slice('file-service://'.length) : null;
+          if (fileId && fileMap.has(fileId)) {
+            pieces.push(`![image](${fileMap.get(fileId)})`);
+            continue;
+          }
+        }
         pieces.push(`![image](${pointer ?? 'unknown'})`);
       }
     }
@@ -82,7 +90,7 @@ function formatRole(role: string): string {
   }
 }
 
-export function convertConversation(detail: ConversationDetail): string {
+export function convertConversation(detail: ConversationDetail, fileMap?: Map<string, string>): string {
   const lines: string[] = [];
 
   // Title
@@ -119,7 +127,7 @@ export function convertConversation(detail: ConversationDetail): string {
     let text = '';
     if (msg.content) {
       if (msg.content.parts && msg.content.parts.length > 0) {
-        text = extractTextFromParts(msg.content.parts);
+        text = extractTextFromParts(msg.content.parts, fileMap);
       } else if (msg.content.text) {
         text = msg.content.text;
       }
@@ -187,8 +195,11 @@ async function collectAllJsonFiles(inputDir: string): Promise<string[]> {
   return files;
 }
 
-export async function convertDirectory(inputDir: string): Promise<{ converted: number; errors: number }> {
+export async function convertDirectory(inputDir: string, filesDir?: string): Promise<{ converted: number; errors: number }> {
   const jsonFiles = await collectAllJsonFiles(inputDir);
+
+  // Build a global fileMap from the files/ directory (fileId → files/{fileId}/{filename})
+  const globalFileMap = filesDir ? await buildFileMap(filesDir) : null;
 
   let converted = 0;
   let errors = 0;
@@ -197,7 +208,20 @@ export async function convertDirectory(inputDir: string): Promise<{ converted: n
     try {
       const raw = await fs.readFile(jsonPath, 'utf-8');
       const detail = JSON.parse(raw) as ConversationDetail;
-      const markdown = convertConversation(detail);
+
+      // Compute relative paths from this markdown file's directory to each file
+      let fileMap: Map<string, string> | undefined;
+      if (globalFileMap && globalFileMap.size > 0) {
+        fileMap = new Map();
+        const mdDir = path.dirname(jsonPath);
+        for (const [fileId, filePath] of globalFileMap) {
+          const absFilePath = path.join(inputDir, filePath);
+          const relativePath = path.relative(mdDir, absFilePath);
+          fileMap.set(fileId, relativePath);
+        }
+      }
+
+      const markdown = convertConversation(detail, fileMap);
       const mdPath = jsonPath.replace(/\.json$/, '.md');
       await fs.writeFile(mdPath, markdown, 'utf-8');
       converted++;

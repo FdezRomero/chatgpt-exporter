@@ -70,16 +70,11 @@ chatgpt-export/
 | `-t, --token <token>` | Access token (or use `CHATGPT_TOKEN` env)  | —                  |
 | `-o, --output <dir>`  | Output directory                           | `./chatgpt-export` |
 | `--incremental`       | Only download new or updated conversations | `false`            |
+| `--download-files`    | Download file attachments and images       | `false`            |
 | `--project <name>`    | Only backup a specific project             | all                |
 | `--concurrency <n>`   | Parallel downloads                         | `3`                |
 | `--delay <ms>`        | Delay between API requests                 | `500`              |
 | `-v, --verbose`       | Show detailed error messages               | `false`            |
-
-**Incremental backups** (recommended after the first full export):
-
-```bash
-npx chatgpt-exporter backup --token "eyJhbG..." --incremental
-```
 
 ### 2. List conversations
 
@@ -102,12 +97,17 @@ npx chatgpt-exporter projects --token "eyJhbG..."
 ## Typical workflow
 
 ```bash
-# First time: full export (includes markdown conversion)
+# First time: full export
 npx chatgpt-exporter backup --token "eyJhbG..."
 
+# Include uploaded images and file attachments
+npx chatgpt-exporter backup --token "eyJhbG..." --download-files
+
 # Later: only fetch what changed
-npx chatgpt-exporter backup --token "eyJhbG..." --incremental
+npx chatgpt-exporter backup --token "eyJhbG..." --incremental --download-files
 ```
+
+When using `--download-files`, files are saved to `chatgpt-export/files/` and Markdown files reference them with relative paths. Already-downloaded files are skipped on subsequent runs, and permanently unavailable files are remembered so they aren't retried.
 
 ## Troubleshooting
 
@@ -116,6 +116,10 @@ npx chatgpt-exporter backup --token "eyJhbG..." --incremental
 **"Rate limit"** — ChatGPT is throttling requests. The tool retries automatically, but you can increase the delay: `--delay 1000`.
 
 **Empty or short Markdown files** — This is normal for short conversations. The tool skips system messages and internal tool calls (like PDF parsing), so a conversation where you uploaded a file and got one response will produce a small `.md` with just your question and the answer.
+
+## Privacy & Security
+
+This tool runs entirely on your machine. It only communicates with OpenAI's servers (`chatgpt.com`) using your browser session token to access the same API that the ChatGPT web app uses. There is no telemetry, no analytics, no third-party services, and no data sent anywhere else. Your conversations and files are saved directly to your local filesystem.
 
 ## Development
 

@@ -6,4 +6,5 @@ export const ENDPOINTS = {
   CONVERSATION: (id: string) => `/backend-api/conversation/${id}`,
   PROJECTS_SIDEBAR: '/backend-api/gizmos/snorlax/sidebar',
   PROJECT_CONVERSATIONS: (gizmoId: string) => `/backend-api/gizmos/${gizmoId}/conversations`,
+  FILE_DOWNLOAD: (fileId: string) => `/backend-api/files/download/${fileId}`,
 } as const;

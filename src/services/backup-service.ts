@@ -61,7 +61,7 @@ export class BackupService {
 
   async listProjectConversations(
     gizmoId: string,
-    options: Pick<BackupOptions, 'delay' | 'onListProgress'> = {}
+    options: Partial<Pick<BackupOptions, 'delay' | 'onListProgress'>> = {}
   ): Promise<ConversationItem[]> {
     const conversations: ConversationItem[] = [];
 

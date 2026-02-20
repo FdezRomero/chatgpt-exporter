@@ -34,9 +34,10 @@ export async function withRetry<T>(
         break;
       }
 
+      const statusCode = (lastError as { statusCode?: number }).statusCode;
       if (
         lastError.name === 'AuthenticationError' ||
-        (lastError.name === 'NetworkError' && (lastError as { statusCode?: number }).statusCode === 404)
+        (lastError.name === 'NetworkError' && (statusCode === 403 || statusCode === 404))
       ) {
         throw lastError;
       }
